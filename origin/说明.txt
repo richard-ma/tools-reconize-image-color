@@ -1,0 +1,5 @@
+识别图片的颜色并写入到csv中的color列
+1.查询csv中的images列图片是否在images文件夹存在，如果存在识别图片的颜色，并写入到color列中。如果不存在，csv中nofound列设置值为1
+2.原csv中第一列，第二列，第三列，第四列固定为code,images,color,nofound.其他列的值不固定
+3.重新生成的csv命名为原csv文件名_new.csv
+4.识别的图片颜色不用百分百准确。就是设置为图片中大部分出现的颜色为主就可以。比如一张图片中有blue，white，pink等等。如果是blue居多，那图片颜色就设置为blue。
