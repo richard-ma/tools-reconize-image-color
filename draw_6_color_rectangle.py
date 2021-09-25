@@ -93,6 +93,7 @@ class App:
 
 class MyApp(App):
     def process(self):
+        n_color = 10
         image_dir = 'test/images'
         input_filename = 'data/3_10_colors_centers.csv'
         data = self.readCsvToDict(input_filename)
@@ -100,18 +101,20 @@ class MyApp(App):
         for d in data:
             fig, ax = plt.subplots()
             ax.set_title(d['filename'])
-            ax.plot([0, 60], [0, 10])
+            ax.plot([0, n_color * 10], [0, 10])
 
             x = 0
             interval = 10
-            colors = json.loads(d["6 colors centers"])
-            for i in range(6):
+            colors = json.loads(d["%d colors centers" % (n_color)])
+            for i in range(n_color):
+                print(colors[i])
                 ax.add_patch(Rectangle(
                     (x, 0),
                     interval-1,
                     10,
                     #fc=[90/255, 90/255, 90/255],
                     fc=[c/255 for c in colors[i]],
+                    ec=[0, 0, 0],
                     fill=True))
                 x += interval
 
