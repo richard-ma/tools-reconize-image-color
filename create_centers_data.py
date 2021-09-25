@@ -4,16 +4,15 @@
 import csv
 import os
 import sys
-import shutil
-from pprint import pprint
-
 import matplotlib
+import json
+import numpy as np
+
 matplotlib.use('TKAgg')
 from imageio import imread
-from matplotlib import pyplot as plt
+from sklearn import preprocessing
 from sklearn.cluster import KMeans
-from sklearn.utils import shuffle
-from pprint import pprint
+
 
 class App:
     def __init__(self):
@@ -35,9 +34,9 @@ class App:
     def usage(self):
         print("*" * 80)
         print("*", " " * 76, "*")
-        print(" " * ((80-12-len(self.title_line))//2),
-            self.title_line,
-            " " * ((80-12-len(self.title_line))//2))
+        print(" " * ((80 - 12 - len(self.title_line)) // 2),
+              self.title_line,
+              " " * ((80 - 12 - len(self.title_line)) // 2))
         print("*", " " * 76, "*")
         print("*" * 80)
 
@@ -70,8 +69,7 @@ class App:
             fieldnames = data[0].keys()
 
         with open(filename, 'w+', encoding=encoding, newline=newline) as f:
-            writer = csv.DictWriter(f,
-                fieldnames=fieldnames)
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
             writer.writeheader()
             writer.writerows(data)
 
@@ -103,7 +101,7 @@ class MyApp(App):
         return ans
 
     def process(self):
-        n_colors_range = range(3, 10)
+        n_colors_range = range(3, 10+1) # 3-10
         image_dir = 'test/images'
         data = list()
         for filename in os.listdir(image_dir):
@@ -115,35 +113,27 @@ class MyApp(App):
             w, h, d = img.shape
             assert d == 3
             pixel_len = w * h
-            img = img.reshape(pixel_len, d) # flatten array
+            img = img.reshape(pixel_len, d)  # flatten array
 
-            #image_sample_array = shuffle(img, random_state=0)[:int(pixel_len * 1)]
+            image_sample_array = np.array(img, dtype=np.float64)
+            #image_sample_array = preprocessing.scale(image_sample_array)
+
             for n_colors in n_colors_range:
-                image_sample_array = img
-                kmeans = KMeans(n_clusters=n_colors, 	random_state=0).fit(image_sample_array)
+                kmeans = KMeans(n_clusters=n_colors, random_state=0).fit(image_sample_array)
                 centers = [[int(v) for v in _] for _ in kmeans.cluster_centers_]
-                centers.sort()
-                pprint(centers)
+                print(centers)
 
-                assert n_colors > 1
-                distance = list()
-                for i in range(1, n_colors):
-                    distance.append(MyApp.vector_distance(centers[i], centers[i-1]))
-                distance = [abs(d) for d in distance]
-                da["%d_colors" % (n_colors)] = min(distance)
+                da['%d colors centers' % (n_colors)] = json.dumps(centers)
 
-            data.append(da) # add line
+            data.append(da)  # add line
 
-        output_filename = 'data/n_colors_min_distance.csv'
+        output_filename = 'data/3_10_colors_centers.csv'
 
         fieldnames = list(data[0].keys())
-        #pprint(fieldnames)
+        # pprint(fieldnames)
         self.writeCsvFromDict(output_filename, data, fieldnames=fieldnames)
 
 
 if __name__ == "__main__":
     app = MyApp()
     app.run()
-
-
-

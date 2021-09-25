@@ -4,16 +4,15 @@
 import csv
 import os
 import sys
-import shutil
-from pprint import pprint
-
 import matplotlib
+import json
+
 matplotlib.use('TKAgg')
 from imageio import imread
-from matplotlib import pyplot as plt
 from sklearn.cluster import KMeans
-from sklearn.utils import shuffle
-from pprint import pprint
+import matplotlib.pyplot as plt
+from matplotlib.patches import Rectangle
+
 
 class App:
     def __init__(self):
@@ -35,9 +34,9 @@ class App:
     def usage(self):
         print("*" * 80)
         print("*", " " * 76, "*")
-        print(" " * ((80-12-len(self.title_line))//2),
-            self.title_line,
-            " " * ((80-12-len(self.title_line))//2))
+        print(" " * ((80 - 12 - len(self.title_line)) // 2),
+              self.title_line,
+              " " * ((80 - 12 - len(self.title_line)) // 2))
         print("*", " " * 76, "*")
         print("*" * 80)
 
@@ -70,8 +69,7 @@ class App:
             fieldnames = data[0].keys()
 
         with open(filename, 'w+', encoding=encoding, newline=newline) as f:
-            writer = csv.DictWriter(f,
-                fieldnames=fieldnames)
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
             writer.writeheader()
             writer.writerows(data)
 
@@ -94,56 +92,32 @@ class App:
 
 
 class MyApp(App):
-    @staticmethod
-    def vector_distance(v1, v2):
-        assert len(v1) == len(v2)
-        ans = 0
-        for i in range(len(v1)):
-            ans += v1[i] - v2[i]
-        return ans
-
     def process(self):
-        n_colors_range = range(3, 10)
         image_dir = 'test/images'
-        data = list()
-        for filename in os.listdir(image_dir):
-            da = dict()
-            da['filename'] = filename
+        input_filename = 'data/3_10_colors_centers.csv'
+        data = self.readCsvToDict(input_filename)
 
-            image_filename = os.path.join(image_dir, filename)
-            img = imread(image_filename)
-            w, h, d = img.shape
-            assert d == 3
-            pixel_len = w * h
-            img = img.reshape(pixel_len, d) # flatten array
+        for d in data:
+            fig, ax = plt.subplots()
+            ax.set_title(d['filename'])
+            ax.plot([0, 60], [0, 10])
 
-            #image_sample_array = shuffle(img, random_state=0)[:int(pixel_len * 1)]
-            for n_colors in n_colors_range:
-                image_sample_array = img
-                kmeans = KMeans(n_clusters=n_colors, 	random_state=0).fit(image_sample_array)
-                centers = [[int(v) for v in _] for _ in kmeans.cluster_centers_]
-                centers.sort()
-                pprint(centers)
+            x = 0
+            interval = 10
+            colors = json.loads(d["6 colors centers"])
+            for i in range(6):
+                ax.add_patch(Rectangle(
+                    (x, 0),
+                    interval-1,
+                    10,
+                    #fc=[90/255, 90/255, 90/255],
+                    fc=[c/255 for c in colors[i]],
+                    fill=True))
+                x += interval
 
-                assert n_colors > 1
-                distance = list()
-                for i in range(1, n_colors):
-                    distance.append(MyApp.vector_distance(centers[i], centers[i-1]))
-                distance = [abs(d) for d in distance]
-                da["%d_colors" % (n_colors)] = min(distance)
-
-            data.append(da) # add line
-
-        output_filename = 'data/n_colors_min_distance.csv'
-
-        fieldnames = list(data[0].keys())
-        #pprint(fieldnames)
-        self.writeCsvFromDict(output_filename, data, fieldnames=fieldnames)
+            plt.show()
 
 
 if __name__ == "__main__":
     app = MyApp()
     app.run()
-
-
-
