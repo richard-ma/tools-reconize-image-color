@@ -6,10 +6,12 @@ from sklearn.datasets import load_sample_image, get_data_home
 from sklearn.utils import shuffle
 from time import time
 
+print(get_data_home())
+
 n_colors = 10
 
 # Load the Summer Palace photo
-img = load_sample_image("test/images/black_0305_1024x1024@2x.jpg")
+img = load_sample_image("black_0305_1024x1024@2x.jpg")
 
 # Convert to floats instead of the default 8 bits integer coding. Dividing by
 # 255 is important so that plt.imshow behaves works well on float data (need to
