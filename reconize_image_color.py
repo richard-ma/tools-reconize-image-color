@@ -6,7 +6,7 @@ from color_table import color_table
 
 THUMBNAIL_WIDTH = 200
 THUMBNAIL_HEIGHT = 200
-REDUCE_BACKGROUND = 0.3
+REDUCE_BACKGROUND = 0.60
 DIVIDE = 5
 
 
@@ -21,7 +21,7 @@ def recreate_color_table(f):
     return {tuple((e // f) * f for e in v): k for k, v in color_table.items()}
 
 
-def get_color(filename):
+def get_color(filename, step=2):
     f = get_factor(DIVIDE)
 
     with Image.open(filename) as img:
@@ -29,8 +29,8 @@ def get_color(filename):
         img.thumbnail([THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT])
         px = img.load()
         bg = tuple((e // f) * f for e in px[0, 0])
-        for w in range(img.width):
-            for h in range(img.height):
+        for w in range(0, img.width, step):
+            for h in range(0, img.height, step):
                 p = tuple((e // f) * f for e in px[w, h])
                 if p not in d.keys():
                     d[p] = 1
@@ -38,6 +38,7 @@ def get_color(filename):
                     d[p] += 1
         d[bg] *= (1 - REDUCE_BACKGROUND)
         sorted_d = sorted(d.items(), key=lambda kv: (kv[1], kv[0]), reverse=True)
+        #print(sorted_d)
     return sorted_d[0][0], color2name(sorted_d[0][0])
 
 
@@ -57,22 +58,22 @@ if __name__ == "__main__":
         "./test/images/12b-9661-10340.jpg",
     ]
 
-    #import os
-    #import shutil
+    import os
+    import shutil
 
     i = 1
-    #for filename in glob('C:\\Users\\richa\\Desktop\\images\\*.jpg'):
-    for filename in filenames:
+    for filename in glob('C:\\Users\\richa\\Desktop\\images\\*.jpg'):
+    #for filename in filenames:
         color_code, color_name = get_color(filename)
         print("[%06d] %s -- %s" % (i, color_name, filename))
-        print(color_code, color_name)
+        #print(color_code, color_name)
         #if color_name is None:
             #print(color_code, filename)
 
         # 分类存放
-        #new_dir = str(color_code)
-        #path, file = os.path.split(filename)
-        #if not os.path.exists(os.path.join(path, new_dir)):
-            #os.mkdir(os.path.join(path, new_dir))
-        #shutil.copyfile(filename, os.path.join(path, new_dir, file))
-        #i += 1
+        new_dir = str(color_code)
+        path, file = os.path.split(filename)
+        if not os.path.exists(os.path.join(path, new_dir)):
+            os.mkdir(os.path.join(path, new_dir))
+        shutil.copyfile(filename, os.path.join(path, new_dir, file))
+        i += 1
