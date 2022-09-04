@@ -1,13 +1,13 @@
-from glob import glob
-
+import os
+import csv
 from PIL import Image
-
 from color_table import color_table
 
 THUMBNAIL_WIDTH = 200
 THUMBNAIL_HEIGHT = 200
-REDUCE_BACKGROUND = 0.60
+REDUCE_BACKGROUND = 0.45
 DIVIDE = 5
+BG_COORDINATE = (5, 5)
 
 
 def get_factor(n):
@@ -21,14 +21,14 @@ def recreate_color_table(f):
     return {tuple((e // f) * f for e in v): k for k, v in color_table.items()}
 
 
-def get_color(filename, step=2):
+def get_color(filename, step=1):
     f = get_factor(DIVIDE)
 
     with Image.open(filename) as img:
         d = dict()
         img.thumbnail([THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT])
         px = img.load()
-        bg = tuple((e // f) * f for e in px[0, 0])
+        bg = tuple((e // f) * f for e in px[BG_COORDINATE])
         for w in range(0, img.width, step):
             for h in range(0, img.height, step):
                 p = tuple((e // f) * f for e in px[w, h])
@@ -37,9 +37,8 @@ def get_color(filename, step=2):
                 else:
                     d[p] += 1
         d[bg] *= (1 - REDUCE_BACKGROUND)
-        sorted_d = sorted(d.items(), key=lambda kv: (kv[1], kv[0]), reverse=True)
-        #print(sorted_d)
-    return sorted_d[0][0], color2name(sorted_d[0][0])
+        sorted_d = sorted(d.items(), key=lambda kv: [kv[1], kv[0]], reverse=True)
+    return sorted_d[0][0]
 
 
 def color2name(color):
@@ -54,26 +53,50 @@ def color2name(color):
 
 
 if __name__ == "__main__":
-    filenames = [
-        "./test/images/12b-9661-10340.jpg",
-    ]
+    csv_filename = input("请拖动csv文件到本窗口，然后确保已经把所有待识别的图片放置在和csv同目录下的名为images目录中，然后回车确认")
+    if len(csv_filename) == 0:
+        csv_filename = "test/product_data_color.csv"
 
-    import os
-    import shutil
+    working_dir, fn = os.path.split(csv_filename)
+    output_csv_filename = os.path.join(working_dir, 'new_' + fn)
 
-    i = 1
-    for filename in glob('C:\\Users\\richa\\Desktop\\images\\*.jpg'):
-    #for filename in filenames:
-        color_code, color_name = get_color(filename)
-        print("[%06d] %s -- %s" % (i, color_name, filename))
-        #print(color_code, color_name)
-        #if color_name is None:
-            #print(color_code, filename)
+    output_csv_file = open(output_csv_filename, 'w+', encoding='GBK', newline='')
 
-        # 分类存放
-        new_dir = str(color_code)
-        path, file = os.path.split(filename)
-        if not os.path.exists(os.path.join(path, new_dir)):
-            os.mkdir(os.path.join(path, new_dir))
-        shutil.copyfile(filename, os.path.join(path, new_dir, file))
-        i += 1
+    with open(csv_filename, 'r+', encoding='GBK') as csv_file:
+        line_no = 1
+        reader = csv.DictReader(csv_file)
+        for row in reader:
+            if line_no == 1:
+                writer = csv.DictWriter(output_csv_file, fieldnames=row.keys())
+                writer.writeheader()
+
+            filename = os.path.join(working_dir, 'images', row['images'])
+            if os.path.exists(filename):
+                color_code = get_color(filename)
+                color_name = color2name(color_code)
+                print("[%06d] %s -- %s" % (line_no, color_name, filename))
+
+                if color_name is None:
+                    color_name += color_code
+
+                row['color'] = color_name
+            else:
+                print("[%06d] %s -- %s" % (line_no, 'nofound', filename))
+                row['nofound'] = 'no found'
+
+            writer.writerow(row)
+
+            # 分类存放
+            #import os
+            #import shutil
+            #import pprint
+
+            #new_dir = str(color_code)
+            #path, file = os.path.split(filename)
+            #if not os.path.exists(os.path.join(path, new_dir)):
+            #    os.mkdir(os.path.join(path, new_dir))
+            #shutil.copyfile(filename, os.path.join(path, new_dir, file))
+
+            line_no += 1
+
+    output_csv_file.close()
